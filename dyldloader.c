@@ -116,6 +116,38 @@ int remap_into_process(task_t target_task, void* executable_region,
   return 0;
 }
 
+int set_entry_point(task_t target_task, vm_address_t entry_point) {
+  kern_return_t err;
+  thread_act_t* thread_array;
+  mach_msg_type_number_t num_threads;
+  err = task_threads(target_task, &thread_array, &num_threads);
+  if (err) {
+    fprintf(stderr, "Failed to get threads: %s\n", mach_error_string(err));
+    return 1;
+  }
+  thread_t main_thread = thread_array[0];
+#ifdef __x86_64__
+  x86_thread_state64_t thread_state;
+  mach_msg_type_number_t thread_state_count = x86_THREAD_STATE64_COUNT;
+  err = thread_get_state(main_thread, x86_THREAD_STATE64,
+                         (thread_state_t)&thread_state, &thread_state_count);
+  if (err) {
+    fprintf(stderr, "Failed to get thread state: %s\n", mach_error_string(err));
+    return 1;
+  }
+  thread_state.__rip = entry_point;
+  err = thread_set_state(main_thread, x86_THREAD_STATE64,
+                         (thread_state_t)&thread_state, thread_state_count);
+  if (err) {
+    fprintf(stderr, "Failed to set thread state: %s\n", mach_error_string(err));
+    return 1;
+  }
+#elif __arm64e__
+#error TODO(zhuowei)
+#endif
+  return 0;
+}
+
 vm_address_t get_dyld_target_map_address(task_t target_task,
                                          size_t new_dyld_all_images_offset) {
   kern_return_t err;
@@ -194,7 +226,10 @@ int map_dyld(int target_pid, const char* dyld_path) {
   if (remap_into_process(target_task, executable_map, target_address)) {
     return 1;
   }
-  // TODO(zhuowei): set entry point
+  // TODO(zhuowei): grab entry point from unixthread
+  if (set_entry_point(target_task, target_address + 0x1000)) {
+    return 1;
+  }
   return 0;
 }
 
