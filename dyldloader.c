@@ -12,9 +12,25 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-size_t get_address_space_size(void* executable_region) {
+void set_all_images_offset_maybe(struct segment_command_64* seg_cmd,
+                                 size_t* all_images_offset) {
+  struct section_64* sections = (void*)seg_cmd + sizeof(*seg_cmd);
+  for (unsigned int index = 0; index < seg_cmd->nsects; index++) {
+    struct section_64* section = &sections[index];
+    if (!strncmp(section->sectname, "__all_image_info",
+                 sizeof(section->sectname))) {
+      *all_images_offset = section->addr;
+    }
+  }
+}
+
+size_t get_address_space_size(void* executable_region,
+                              size_t* all_images_offset) {
   struct mach_header_64* mh = executable_region;
   struct load_command* cmd = executable_region + sizeof(struct mach_header_64);
+
+  *all_images_offset = 0;
+
   uint64_t min_addr = ~0;
   uint64_t max_addr = 0;
   for (unsigned int index = 0; index < mh->ncmds; index++) {
@@ -23,6 +39,9 @@ size_t get_address_space_size(void* executable_region) {
         struct segment_command_64* seg_cmd = (struct segment_command_64*)cmd;
         min_addr = MIN(min_addr, seg_cmd->vmaddr);
         max_addr = MAX(max_addr, seg_cmd->vmaddr + seg_cmd->vmsize);
+        if (!strncmp(seg_cmd->segname, "__DATA", sizeof(seg_cmd->segname))) {
+          set_all_images_offset_maybe(seg_cmd, all_images_offset);
+        }
         break;
       }
     }
@@ -97,6 +116,22 @@ int remap_into_process(task_t target_task, void* executable_region,
   return 0;
 }
 
+vm_address_t get_dyld_target_map_address(task_t target_task,
+                                         size_t new_dyld_all_images_offset) {
+  kern_return_t err;
+  // https://opensource.apple.com/source/dyld/dyld-195.6/unit-tests/test-cases/all_image_infos-cache-slide/main.c
+  task_dyld_info_data_t task_dyld_info;
+  mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
+  err = task_info(target_task, TASK_DYLD_INFO, (task_info_t)&task_dyld_info,
+                  &count);
+  if (err) {
+    fprintf(stderr, "Failed to get task info: %s\n", mach_error_string(err));
+    return 0;
+  }
+  vm_address_t old_dyld_all_images_address = task_dyld_info.all_image_info_addr;
+  return old_dyld_all_images_address - new_dyld_all_images_offset;
+}
+
 int map_dyld(int target_pid, const char* dyld_path) {
   task_t target_task;
   kern_return_t err;
@@ -131,8 +166,24 @@ int map_dyld(int target_pid, const char* dyld_path) {
   if (!executable_map) {
     return 1;
   }
-  size_t address_space_size = get_address_space_size(executable_map);
-  vm_address_t target_address = 0x400000000ull;
+  size_t new_dyld_all_images_offset = 0;
+  size_t address_space_size =
+      get_address_space_size(executable_map, &new_dyld_all_images_offset);
+  if (!new_dyld_all_images_offset) {
+    fprintf(stderr, "can't find all images\n");
+    return 1;
+  }
+  // TODO(zhuowei): this _only_ works if ASLR is enabled
+  // (since we try to align the image infos of the new dyld on top of the old,
+  // and that would overwrite the executable if ASLR is off and dyld is right
+  // behind the executable) at least detect if we would overwrite an existing
+  // mapping...
+  vm_address_t target_address =
+      get_dyld_target_map_address(target_task, new_dyld_all_images_offset);
+  if (!target_address) {
+    return 1;
+  }
+  fprintf(stderr, "mapping dyld at %p\n", (void*)target_address);
   err = vm_allocate(target_task, &target_address, address_space_size,
                     VM_FLAGS_FIXED | VM_FLAGS_OVERWRITE);
   if (err) {
@@ -143,6 +194,7 @@ int map_dyld(int target_pid, const char* dyld_path) {
   if (remap_into_process(target_task, executable_map, target_address)) {
     return 1;
   }
+  // TODO(zhuowei): set entry point
   return 0;
 }
 
