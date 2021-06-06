@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.apple.WindowServer</string>
+	<key>MachServices</key>
+	<dict>
+		<key>com.apple.iohideventsystem</key>
+		<dict>
+			<key>ResetAtClose</key>
+			<true/>
+		</dict>
+		<key>com.apple.windowserver</key>
+		<true/>
+		<key>com.apple.windowserver.active</key>
+		<dict>
+			<key>HideUntilCheckIn</key>
+			<true/>
+		</dict>
+		<key>com.apple.windowserver.watchdog</key>
+		<dict>
+			<key>HideUntilCheckIn</key>
+			<true/>
+		</dict>
+		<key>com.apple.CARenderServer</key>
+		<dict>
+			<key>HideUntilCheckIn</key>
+			<true/>
+		</dict>
+		<key>com.apple.CoreDisplay.master</key>
+		<dict>
+			<key>HideUntilCheckIn</key>
+			<true/>
+		</dict>
+		<key>com.apple.CoreDisplay.Notification</key>
+		<dict>
+			<key>HideUntilCheckIn</key>
+			<true/>
+			<key>ResetAtClose</key>
+			<true/>
+		</dict>
+		<key>com.apple.VirtualDisplay</key>
+		<dict>
+			<key>HideUntilCheckIn</key>
+			<true/>
+		</dict>
+	</dict>
+	<key>POSIXSpawnType</key>
+	<string>Interactive</string>
+	<key>ProgramArguments</key>
+	<array>
+		<!-- zhuowei: path -->
+		<string>/usr/bin/dash</string>
+		<string>/usr/local/zhuowei/wrap_windowserver</string>
+		<string>-daemon</string>
+	</array>
+	<!-- zhuowei: more ram -->
+	<key>EnablePressuredExit</key>
+	<false/>
+</dict>
+</plist>

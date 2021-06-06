@@ -1,0 +1,9 @@
+#!/bin/sh
+xDYLD_SHARED_REGION=private xDYLD_SHARED_CACHE_DIR=/usr/local/zhuowei \
+	HOME=/var/root \
+	MallocScribble=1 \
+	MallocPreScribble=1 \
+	exec \
+	/usr/local/zhuowei/littlespawn \
+	/usr/local/zhuowei/SkyLight.framework/Versions/A/Resources/WindowServer_arm64 \
+	"$@" -virtualonly >/var/root/windowserver_log 2>&1
