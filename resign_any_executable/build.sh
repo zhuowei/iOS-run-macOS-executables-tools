@@ -2,7 +2,7 @@
 set -e
 lipo -thin arm64e -output "$2" "$1"
 chmod +w "$2"
-codesign -d --entitlement "$2.entitlement" "$2"
+[[ -e "$2.entitlement" ]] || codesign -d --entitlement "$2.entitlement" "$2"
 python3 set_to_arm64.py "$2"
 if [[ -s "$2.entitlement" ]]
 then

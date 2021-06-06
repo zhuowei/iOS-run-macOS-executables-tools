@@ -1,3 +1,4 @@
+target modules search-paths add / /Volumes/F32THICKHD/macos114arm64e/out
 process connect connect://localhost:3335
 breakpoint set -n sysctlbyname -c "(int)strcmp((char*)$x0, \"kern.osvariant_status\") == 0" -o true
 breakpoint command add
@@ -8,10 +9,22 @@ c
 DONE
 b SLXServer
 b exit
-b _os_log_error_impl
-b _os_log_debug_impl
-b _os_log_impl
-b mkdir
+#b _os_log_error_impl
+#breakpoint command add
+#print (char*)$x3
+#c
+#DONE
+#b _os_log_debug_impl
+#breakpoint command add
+#print (char*)$x3
+#c
+#DONE
+#b _os_log_impl
+#breakpoint command add
+#print (char*)$x3
+#c
+#DONE
+#b mkdir
 b sandbox_init_with_parameters
 breakpoint command add
 print $x0=0
@@ -25,3 +38,25 @@ print (void)strcpy((void*)$x1, "/var/tmp")
 print $pc=$lr
 c
 DONE
+breakpoint set -n IOServiceMatching -c "(int)strcmp((char*)$x0, \"IOAccelerator\") == 0" -o true
+breakpoint command add
+print $x0=(unsigned long long)strcpy((void*)malloc(0x1000), "IOAcceleratorES");
+c
+DONE
+breakpoint set -n IOServiceNameMatching -c "(int)strcmp((char*)$x0, \"IOSurfaceRoot\") == 0" -o true
+breakpoint command add
+print $x0=(unsigned long long)strcpy((void*)malloc(0x1000), "IOCoreSurfaceRoot");
+c
+DONE
+b IOServiceMatching
+b IOServiceNameMatching
+b gpu_bundle_find_trusted
+breakpoint command add
+print $x0=0
+print (void*)strcpy((void*)$x1, "/usr/local/zhuowei/AGXMetal13_3.bundle")
+print $pc=$lr
+DONE
+b +[NSBundle bundleWithPath:]
+b -[NSBundle load]
+b -[CAWindowServer _detectDisplays]
+b IOHIDEventSystemCreate
