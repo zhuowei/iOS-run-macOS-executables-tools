@@ -1,8 +1,27 @@
 process connect connect://localhost:3335
-breakpoint set -n sysctlbyname -c "strcmp((char*)$x0, "kern.osvariant_status") == 0" -o true
+breakpoint set -n sysctlbyname -c "(int)strcmp((char*)$x0, \"kern.osvariant_status\") == 0" -o true
 breakpoint command add
 print $x0=0
 print *(unsigned long long*)$x1 = 0x70010000f388828a
+print $pc=$lr
+c
+DONE
+b SLXServer
+b exit
+b _os_log_error_impl
+b _os_log_debug_impl
+b _os_log_impl
+b mkdir
+b sandbox_init_with_parameters
+breakpoint command add
+print $x0=0
+print $pc=$lr
+c
+DONE
+breakpoint set -n confstr -c "$x0 == 0x10002"
+breakpoint command add
+print $x0=9
+print (void)strcpy((void*)$x1, "/var/tmp")
 print $pc=$lr
 c
 DONE
