@@ -1,0 +1,20 @@
+#libsystem_c.dylib/sysctlbyname
+breakpoint set -a 0x00000001801d4f0c -c "(int)strcmp((char*)$x0, \"kern.osvariant_status\") == 0" -o true
+breakpoint command add
+print $x0=0
+print *(unsigned long long*)$x1 = 0x70010000f388828a
+print $pc=$lr
+c
+DONE
+b *0x1802d2874
+breakpoint command add
+print $x0=0
+print $pc=$pc+4
+c
+DONE
+b *0x1802dfb90
+breakpoint command add
+print $x10=0
+print $pc=$pc+4
+c
+DONE

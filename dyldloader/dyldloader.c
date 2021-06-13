@@ -184,6 +184,7 @@ int set_entry_point(task_t target_task, vm_address_t entry_point) {
 
 vm_address_t get_dyld_target_map_address(task_t target_task,
                                          size_t new_dyld_all_images_offset) {
+#if 0
   kern_return_t err;
   // https://opensource.apple.com/source/dyld/dyld-195.6/unit-tests/test-cases/all_image_infos-cache-slide/main.c
   task_dyld_info_data_t task_dyld_info;
@@ -196,6 +197,8 @@ vm_address_t get_dyld_target_map_address(task_t target_task,
   }
   vm_address_t old_dyld_all_images_address = task_dyld_info.all_image_info_addr;
   return old_dyld_all_images_address - new_dyld_all_images_offset;
+#endif
+  return 0x160000000;
 }
 
 int map_dyld(int target_pid, const char* dyld_path) {
@@ -279,7 +282,7 @@ int map_dyld(int target_pid, const char* dyld_path) {
     return 1;
   }
   // TODO(zhuowei): grab entry point from unixthread
-  if (set_entry_point(target_task, target_address + 0x1000)) {
+  if (set_entry_point(target_task, target_address + 0x45c0)) {
     return 1;
   }
   return 0;

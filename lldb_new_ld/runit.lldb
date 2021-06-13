@@ -1,4 +1,4 @@
-target modules search-paths add / /Volumes/F32THICKHD/macos114arm64e/out
+target modules search-paths add / /Volumes/F32THICKHD/macos120b1dsc/out
 process connect connect://localhost:3335
 breakpoint set -n sysctlbyname -c "(int)strcmp((char*)$x0, \"kern.osvariant_status\") == 0" -o true
 breakpoint command add
@@ -7,56 +7,24 @@ print *(unsigned long long*)$x1 = 0x70010000f388828a
 print $pc=$lr
 c
 DONE
-b SLXServer
-b exit
-#b _os_log_error_impl
-#breakpoint command add
-#print (char*)$x3
-#c
-#DONE
-#b _os_log_debug_impl
-#breakpoint command add
-#print (char*)$x3
-#c
-#DONE
-#b _os_log_impl
-#breakpoint command add
-#print (char*)$x3
-#c
-#DONE
-#b mkdir
-b sandbox_init_with_parameters
+b dyld_macos_12`mach_absolute_time
 breakpoint command add
+print $pc=$lr
 print $x0=0
+c
+DONE
+breakpoint set -n stat64 -s dyld_macos_12 -c "(int)strncmp((char*)$x0, \"/usr/local/zhuowei\", 18) != 0"
+breakpoint command add
+print $x0=1
 print $pc=$lr
 c
 DONE
-breakpoint set -n confstr -c "$x0 == 0x10002"
+breakpoint set -n dyld4::PrebuiltLoader::runInitializers -s dyld_macos_12 -o true
 breakpoint command add
-print $x0=9
-print (void)strcpy((void*)$x1, "/var/tmp")
-print $pc=$lr
+command source put_by_hand.txt
 c
 DONE
-breakpoint set -n IOServiceMatching -c "(int)strcmp((char*)$x0, \"IOAccelerator\") == 0" -o true
+b vztool`main
 breakpoint command add
-print $x0=(unsigned long long)strcpy((void*)malloc(0x1000), "IOAcceleratorES");
-c
+command source thirdstage.txt
 DONE
-breakpoint set -n IOServiceNameMatching -c "(int)strcmp((char*)$x0, \"IOSurfaceRoot\") == 0" -o true
-breakpoint command add
-print $x0=(unsigned long long)strcpy((void*)malloc(0x1000), "IOCoreSurfaceRoot");
-c
-DONE
-b IOServiceMatching
-b IOServiceNameMatching
-b gpu_bundle_find_trusted
-breakpoint command add
-print $x0=0
-print (void*)strcpy((void*)$x1, "/usr/local/zhuowei/AGXMetal13_3.bundle")
-print $pc=$lr
-DONE
-b +[NSBundle bundleWithPath:]
-b -[NSBundle load]
-b -[CAWindowServer _detectDisplays]
-b IOHIDEventSystemCreate

@@ -1,0 +1,4 @@
+# Vz::make_error
+b *0x1e37e6564
+# objc_exception_throw
+b *0x1801a7404
